@@ -4,7 +4,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.*;
 
-import java.io.IOException;
 import java.util.Scanner;
 
 public class Application {
@@ -16,13 +15,12 @@ public class Application {
                 .build();
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
 
         init();
 
         Scanner menu = new Scanner(System.in);
         int number = 0;
-        String instance_id = "";
 
         while(true)
         {
@@ -44,6 +42,30 @@ public class Application {
 
             number = menu.nextInt();
                 switch(number) {
+                    case 1:
+                        listInstances();
+                        break;
+                    case 2:
+
+                        break;
+                    case 3:
+                        startInstance(getInstanceId());
+                        break;
+                    case 4:
+
+                        break;
+                    case 5:
+                        stopInstance(getInstanceId());
+                        break;
+                    case 6:
+                        createEC2Instance(getName(), getAmiId());
+                        break;
+                    case 7:
+                        rebootEC2Instance(getInstanceId());
+                        break;
+                    case 8:
+
+                        break;
                     case 99:
                         return;
                     default:
@@ -52,4 +74,158 @@ public class Application {
         }
     }
 
+    private static String getName() {
+        System.out.printf("Enter the instance name : ");
+
+        return new Scanner(System.in).nextLine();
+    }
+
+    private static String getAmiId() {
+        System.out.printf("Enter an image id : ");
+
+        return new Scanner(System.in).nextLine();
+    }
+
+    private static String getInstanceId() {
+        Scanner id_string = new Scanner(System.in);
+
+        System.out.printf("Enter an instance id : ");
+
+        return id_string.nextLine();
+    }
+
+
+    public static String createEC2Instance(String name, String amiId ) {
+
+        RunInstancesRequest runRequest = RunInstancesRequest.builder()
+                .imageId(amiId)
+                .instanceType(InstanceType.T1_MICRO)
+                .maxCount(1)
+                .minCount(1)
+                .build();
+
+        RunInstancesResponse response = ec2.runInstances(runRequest);
+        String instanceId = response.instances().get(0).instanceId();
+
+        Tag tag = Tag.builder()
+                .key("Name")
+                .value(name)
+                .build();
+
+        CreateTagsRequest tagRequest = CreateTagsRequest.builder()
+                .resources(instanceId)
+                .tags(tag)
+                .build();
+
+        try {
+            ec2.createTags(tagRequest);
+            System.out.printf(
+                    "Successfully started EC2 Instance %s based on AMI %s",
+                    instanceId, amiId);
+
+            return instanceId;
+
+        } catch (Ec2Exception e) {
+            System.err.println(e.awsErrorDetails().errorMessage());
+            System.exit(1);
+        }
+
+        return "";
+    }
+
+    public static void startInstance(String instanceId) {
+
+        StartInstancesRequest request = StartInstancesRequest.builder()
+                .instanceIds(instanceId)
+                .build();
+
+        ec2.startInstances(request);
+        System.out.printf("Successfully started instance %s", instanceId);
+    }
+
+    public static void stopInstance(String instanceId) {
+
+        StopInstancesRequest request = StopInstancesRequest.builder()
+                .instanceIds(instanceId)
+                .build();
+
+        ec2.stopInstances(request);
+        System.out.printf("Successfully stopped instance %s", instanceId);
+    }
+
+    public static void rebootEC2Instance(String instanceId) {
+
+        try {
+            RebootInstancesRequest request = RebootInstancesRequest.builder()
+                    .instanceIds(instanceId)
+                    .build();
+
+            ec2.rebootInstances(request);
+            System.out.printf(
+                    "Successfully rebooted instance %s", instanceId);
+        } catch (Ec2Exception e) {
+            System.err.println(e.awsErrorDetails().errorMessage());
+            System.exit(1);
+        }
+    }
+
+    public static void listInstances() {
+        System.out.println("Listing instances....");
+
+        boolean done = false;
+        String nextToken = null;
+
+        try {
+
+            do {
+                DescribeInstancesRequest request = DescribeInstancesRequest.builder().maxResults(6).nextToken(nextToken).build();
+                DescribeInstancesResponse response = ec2.describeInstances(request);
+
+                for (Reservation reservation : response.reservations()) {
+                    for (Instance instance : reservation.instances()) {
+                        System.out.printf(
+                                "[id] %s, " +
+                                        "[AMI] %s, " +
+                                        "[type] %s, " +
+                                        "[state] %10s, " +
+                                        "[monitoring state] %s",
+                                instance.instanceId(),
+                                instance.imageId(),
+                                instance.instanceType(),
+                                instance.state().name(),
+                                instance.monitoring().state());
+                        System.out.println();
+
+                    }
+                }
+                nextToken = response.nextToken();
+            } while (nextToken != null);
+
+        } catch (Ec2Exception e) {
+            System.err.println(e.awsErrorDetails().errorMessage());
+            System.exit(1);
+        }
+    }
+
+    public static void monitorInstance(String instanceId) {
+
+        MonitorInstancesRequest request = MonitorInstancesRequest.builder()
+                .instanceIds(instanceId).build();
+
+        ec2.monitorInstances(request);
+        System.out.printf(
+                "Successfully enabled monitoring for instance %s",
+                instanceId);
+    }
+
+    public static void unmonitorInstance(String instanceId) {
+        UnmonitorInstancesRequest request = UnmonitorInstancesRequest.builder()
+                .instanceIds(instanceId).build();
+
+        ec2.unmonitorInstances(request);
+
+        System.out.printf(
+                "Successfully disabled monitoring for instance %s",
+                instanceId);
+    }
 }
