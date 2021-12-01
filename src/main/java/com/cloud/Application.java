@@ -2,6 +2,7 @@ package com.cloud;
 
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.*;
+import software.amazon.awssdk.services.sts.StsClient;
 
 import java.util.Scanner;
 
@@ -84,11 +85,11 @@ public class Application {
         System.out.println("Listing images....");
 
         try {
-            DescribeImagesRequest request = DescribeImagesRequest.builder().owners("913849364345").build();
+            String accountId = StsClient.create().getCallerIdentity().account();
+            DescribeImagesRequest request = DescribeImagesRequest.builder().owners(accountId).build();
             DescribeImagesResponse response = ec2.describeImages(request);
-            System.out.printf("??");
+
             for (Image image : response.images()) {
-                System.out.printf("?1");
                 System.out.printf(
                         "[AMI] %s, " +
                         "[location] %s, " +
@@ -105,7 +106,6 @@ public class Application {
                         image.ownerId(),
                         image.platform());
                 System.out.println();
-
             }
 
         } catch (Ec2Exception e) {
