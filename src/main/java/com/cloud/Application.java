@@ -36,6 +36,7 @@ public class Application {
             System.out.println(" 3. start instance 4. available regions ");
             System.out.println(" 5. stop instance 6. create instance ");
             System.out.println(" 7. reboot instance 8. list images ");
+            System.out.println(" 9. reboot instance 10. list images ");
             System.out.println(" 99. quit ");
             System.out.println("------------------------------------------------------------");
             System.out.print("Enter an integer: ");
@@ -65,6 +66,12 @@ public class Application {
                         break;
                     case 8:
 
+                        break;
+                    case 9:
+                        monitorInstance(getInstanceId());
+                        break;
+                    case 10:
+                        unmonitorInstance(getInstanceId());
                         break;
                     case 99:
                         return;
