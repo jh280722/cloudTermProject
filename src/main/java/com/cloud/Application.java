@@ -1,6 +1,5 @@
 package com.cloud;
 
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.*;
 
@@ -11,7 +10,7 @@ public class Application {
 
     private static void init() {
         ec2 = Ec2Client.builder()
-                .region(Region.US_EAST_2)
+                .region(software.amazon.awssdk.regions.Region.US_EAST_2)
                 .build();
     }
 
@@ -36,7 +35,7 @@ public class Application {
             System.out.println(" 3. start instance 4. available regions ");
             System.out.println(" 5. stop instance 6. create instance ");
             System.out.println(" 7. reboot instance 8. list images ");
-            System.out.println(" 9. reboot instance 10. list images ");
+            System.out.println(" 9. monitor instance 10. unmonitor instance ");
             System.out.println(" 99. quit ");
             System.out.println("------------------------------------------------------------");
             System.out.print("Enter an integer: ");
@@ -47,13 +46,13 @@ public class Application {
                         listInstances();
                         break;
                     case 2:
-
+                        showAvailableZones();
                         break;
                     case 3:
                         startInstance(getInstanceId());
                         break;
                     case 4:
-
+                        showAvailableRegions();
                         break;
                     case 5:
                         stopInstance(getInstanceId());
@@ -65,7 +64,7 @@ public class Application {
                         rebootEC2Instance(getInstanceId());
                         break;
                     case 8:
-
+                        listImages();
                         break;
                     case 9:
                         monitorInstance(getInstanceId());
@@ -78,6 +77,68 @@ public class Application {
                     default:
                         break;
                 }
+        }
+    }
+
+    private static void listImages() {
+        System.out.println("Listing images....");
+
+        try {
+            DescribeImagesRequest request = DescribeImagesRequest.builder().owners("913849364345").build();
+            DescribeImagesResponse response = ec2.describeImages(request);
+            System.out.printf("??");
+            for (Image image : response.images()) {
+                System.out.printf("?1");
+                System.out.printf(
+                        "[AMI] %s, " +
+                        "[location] %s, " +
+                        "[type] %s, " +
+                        "[state] %10s, " +
+                        "[name] %s" +
+                        "[ownerId] %s" +
+                        "[platform] %s",
+                        image.imageId(),
+                        image.imageLocation(),
+                        image.imageType(),
+                        image.state().name(),
+                        image.name(),
+                        image.ownerId(),
+                        image.platform());
+                System.out.println();
+
+            }
+
+        } catch (Ec2Exception e) {
+            System.err.println(e.awsErrorDetails().errorMessage());
+            System.exit(1);
+        }
+    }
+
+
+    private static void showAvailableZones() {
+        DescribeAvailabilityZonesResponse zones_response =
+                ec2.describeAvailabilityZones();
+
+        for(AvailabilityZone zone : zones_response.availabilityZones()) {
+            System.out.printf(
+                    "Found availability zone %s " +
+                            "with status %s " +
+                            "in region %s",
+                    zone.zoneName(),
+                    zone.state(),
+                    zone.regionName());
+        }
+    }
+
+    private static void showAvailableRegions() {
+        DescribeRegionsResponse regions_response = ec2.describeRegions();
+
+        for(Region region : regions_response.regions()) {
+            System.out.printf(
+                    "Found region %s " +
+                            "with endpoint %s",
+                    region.regionName(),
+                    region.endpoint());
         }
     }
 
