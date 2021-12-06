@@ -167,7 +167,9 @@ public class Application {
 
         RunInstancesRequest runRequest = RunInstancesRequest.builder()
                 .imageId(amiId)
-                .instanceType(InstanceType.T1_MICRO)
+                .instanceType(InstanceType.T2_MICRO)
+                .keyName("aws")
+                .securityGroups("htcondor-security")
                 .maxCount(1)
                 .minCount(1)
                 .build();
